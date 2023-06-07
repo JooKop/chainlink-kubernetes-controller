@@ -1,9 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
 Parameters:
-  EKSIAMRoleName:
+  IAMRoleName:
     Type: String
-    Description: The name of the IAM role for the EKS service to assume.
 
 Resources:
   EKSIAMRole:
@@ -18,7 +17,7 @@ Resources:
                 - eks.amazonaws.com
             Action:
               - 'sts:AssumeRole'
-      RoleName: !Ref EKSIAMRoleName
+      RoleName: !Ref IAMRoleName
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
         - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
