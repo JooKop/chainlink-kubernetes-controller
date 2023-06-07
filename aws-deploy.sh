@@ -1,5 +1,5 @@
 TEMPLATE_FILE="aws/deployment.yaml"
-STACK_NAME="chainlink-kubernetes-controller"
+STACK_NAME="chainlink-hackathon"
 
 # Parameters
 IAM_ROLE_NAME="EKSAdmin"
