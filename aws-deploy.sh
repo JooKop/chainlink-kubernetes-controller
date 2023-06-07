@@ -1,4 +1,4 @@
-TEMPLATE_FILE="aws/deployment.yaml"
+TEMPLATE_FILE="aws/eks-iam-cluster-vpc-subnets.yaml"
 STACK_NAME="chainlink-hackathon"
 
 # Parameters
