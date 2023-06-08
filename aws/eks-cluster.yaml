@@ -60,6 +60,24 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
         - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
 
+  EKSWorkerIAMRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      RoleName: !Sub '${AWS::StackName}-workers-role'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+
   EKSCluster:
     Type: AWS::EKS::Cluster
     Properties:
@@ -75,6 +93,27 @@ Resources:
         - !Ref PrivateSubnet01
         - !Ref PrivateSubnet02
     DependsOn: [EKSIAMRole, PublicSubnet01, PublicSubnet02, PrivateSubnet01, PrivateSubnet02, ControlPlaneSecurityGroup]
+
+  EKSNodegroup:
+    Type: 'AWS::EKS::Nodegroup'
+    Properties:
+      AmiType: 'AL2_x86_64'
+      ClusterName: !Sub '${AWS::StackName}-cluster'
+      NodeRole: !Join
+        - ''
+        - - 'arn:aws:iam::'
+          - !Ref 'AWS::AccountId'
+          - ':role/'
+          - !Ref 'AWS::StackName'
+          - '-workers-role'
+      ScalingConfig:
+        MinSize: 1
+        DesiredSize: 1
+        MaxSize: 1
+      Subnets:
+        - !Ref PrivateSubnet01
+        - !Ref PrivateSubnet02
+    DependsOn: [EKSWorkerIAMRole, EKSCluster]
 
   VPC:
     Type: AWS::EC2::VPC
@@ -296,44 +335,6 @@ Resources:
       VpcId: !Ref VPC
 
 
-  EKSWorkerIAMRole:
-    Type: 'AWS::IAM::Role'
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      RoleName: !Sub '${AWS::StackName}-workers-role'
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
-
-  EKSNodegroup:
-    Type: 'AWS::EKS::Nodegroup'
-    Properties:
-      AmiType: 'AL2_x86_64'
-      ClusterName: !Sub '${AWS::StackName}-cluster'
-      NodeRole: !Join 
-        - ''
-        - - 'arn:aws:iam::'
-          - !Ref 'AWS::AccountId'
-          - ':role/'
-          - !Ref 'AWS::StackName'
-          - '-workers-role'
-      ScalingConfig:
-        MinSize: 1
-        DesiredSize: 1
-        MaxSize: 1
-      Subnets: 
-        - !Ref PrivateSubnet01
-        - !Ref PrivateSubnet02
-    DependsOn: [EKSWorkerIAMRole, EKSCluster]
 
 
 Outputs:
