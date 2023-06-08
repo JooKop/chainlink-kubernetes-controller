@@ -1,4 +1,5 @@
 TEMPLATE_FILE="aws/eks-iam-cluster-vpc-subnets.yaml"
+REGION="eu-central-1"
 STACK_NAME="chainlink-hackathon"
 
 # Parameters
@@ -13,3 +14,6 @@ aws cloudformation deploy \
 --stack-name "$STACK_NAME" \
 --parameter-overrides IAMRoleName="$IAM_ROLE_NAME" \
 --capabilities CAPABILITY_NAMED_IAM
+
+# Add cluster access configs to the local kubeconfig file
+aws eks update-kubeconfig --region "$REGION" --name "$STACK_NAME" --alias "$STACK_NAME"
