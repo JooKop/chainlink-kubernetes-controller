@@ -149,17 +149,52 @@ func (r *ChainlinkNodeReconciler) deploymentForChainlinkNode(
 					Labels: ls,
 				},
 				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{{
+						Name: "secret-volume",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: chainlinkNode.Name + "-secrets",
+							},
+						},
+					}, {
+						Name: "config-volume",
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: chainlinkNode.Name + "-config",
+								},
+							},
+						},
+					},
+					},
 					Containers: []corev1.Container{{
 						Image:   "smartcontract/chainlink:2.1.1",
 						Name:    "chainlink-node",
 						Command: []string{"chainlink"},
-						Args:    []string{"node", "-config", "/chainlink/config.toml", "-secrets", "/chainlink/secrets.toml", "start"},
+						Args:    []string{"node", "-config", "/chainlink/config/config.toml", "-secrets", "/chainlink/secrets/secrets.toml", "start", "-a", "/chainlink/secrets/apiuser.txt"},
+						VolumeMounts: []corev1.VolumeMount{{
+							Name:      "secret-volume",
+							ReadOnly:  true,
+							MountPath: "/chainlink/secrets/",
+						}, {
+							Name:      "config-volume",
+							ReadOnly:  true,
+							MountPath: "/chainlink/config",
+						}},
+						Ports: []corev1.ContainerPort{{
+							ContainerPort: 6688,
+							Name:          "operator-ui",
+						}},
 					}, {
 						Image: "postgres:latest",
 						Name:  "chainlink-postgres",
 						Env: []corev1.EnvVar{{
 							Name:  "POSTGRES_PASSWORD",
 							Value: "mysecretpassword",
+						}},
+						Ports: []corev1.ContainerPort{{
+							ContainerPort: 5432,
+							Name:          "postgres",
 						}},
 					},
 					},
