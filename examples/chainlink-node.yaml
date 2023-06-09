@@ -11,7 +11,7 @@ kind: ConfigMap
 metadata:
   name: chainlink-one-config
 data:
-  config: |
+  config.toml: |
     [Log]
     Level = 'warn'
 
@@ -29,3 +29,20 @@ data:
     Name = 'Sepolia'
     WSURL = 'wss://sepolia.infura.io/ws/v3/9b61270ba20c4345945ecfb19c7f3cfd'
     HTTPURL = 'https://sepolia.infura.io/v3/9b61270ba20c4345945ecfb19c7f3cfd'
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: chainlink-one-secrets
+data:
+  secrets.toml: W1Bhc3N3b3JkXQpLZXlzdG9yZSA9ICdteXNlY3JldGtleXN0b3JlcGFzc3dvcmQnCltEYXRhYmFzZV0KVVJMID0gJ3Bvc3RncmVzcWw6Ly9wb3N0Z3JlczpteXNlY3JldHBhc3N3b3JkQGxvY2FsaG9zdDo1NDMyL3Bvc3RncmVzP3NzbG1vZGU9ZGlzYWJsZScK
+  # Content:
+  #  [Password]
+  #  Keystore = 'mysecretkeystorepassword'
+  #  [Database]
+  #  URL = 'postgresql://postgres:mysecretpassword@localhost:5432/postgres?sslmode=disable'
+
+  apiuser.txt: dGVzdEBleGFtcGxlLmNvbQpteXNlY3JldHBhc3N3b3JkCg==
+  # Content (for UI login):
+  #  test@example.com
+  #  mysecretpassword
