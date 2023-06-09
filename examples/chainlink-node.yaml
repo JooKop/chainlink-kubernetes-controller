@@ -1,0 +1,31 @@
+---
+apiVersion: oracle.example.com/v1alpha1
+kind: ChainlinkNode
+metadata:
+  name: chainlink-one
+spec:
+  foo: "This is the first chainlink node!"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chainlink-one-config
+data:
+  config: |
+    [Log]
+    Level = 'warn'
+
+    [WebServer]
+    AllowOrigins = '\*'
+    SecureCookies = false
+
+    [WebServer.TLS]
+    HTTPSPort = 0
+
+    [[EVM]]
+    ChainID = '11155111'
+
+    [[EVM.Nodes]]
+    Name = 'Sepolia'
+    WSURL = 'wss://sepolia.infura.io/ws/v3/9b61270ba20c4345945ecfb19c7f3cfd'
+    HTTPURL = 'https://sepolia.infura.io/v3/9b61270ba20c4345945ecfb19c7f3cfd'
