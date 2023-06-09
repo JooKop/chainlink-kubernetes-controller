@@ -6,4 +6,4 @@ export IMAGE_TAG_BASE="$ECR_REGISTRY"
 
 aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-(cd operator && make docker-buildx docker-push)
+(cd operator && make docker-buildx)
