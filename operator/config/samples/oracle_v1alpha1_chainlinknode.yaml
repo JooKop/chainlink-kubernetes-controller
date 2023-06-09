@@ -9,4 +9,4 @@ metadata:
     app.kubernetes.io/created-by: operator
   name: chainlinknode-sample
 spec:
-  # TODO(user): Add fields here
+  foo: "Hello world!"
