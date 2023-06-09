@@ -27,8 +27,6 @@ import (
 type ChainlinkNodeSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of ChainlinkNode. Edit chainlinknode_types.go to remove/update
 	Foo string `json:"foo,omitempty"`
 }
 
@@ -36,6 +34,7 @@ type ChainlinkNodeSpec struct {
 type ChainlinkNodeStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 //+kubebuilder:object:root=true
