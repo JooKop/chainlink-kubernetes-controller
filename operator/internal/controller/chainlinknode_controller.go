@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,10 +48,23 @@ type ChainlinkNodeReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *ChainlinkNodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	log := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	//Fetch the changed ChainlinkNode resource
+	chainlinkNode := &oraclev1alpha1.ChainlinkNode{}
+	err := r.Get(ctx, req.NamespacedName, chainlinkNode)
 
+	if err != nil {
+		log.Error(err, "An error occurred")
+
+		if apierrors.IsNotFound(err) {
+			log.Info("ChainlinkNode resource not found. Ignoring error because it means the resource was deleted")
+			return ctrl.Result{}, nil
+		}
+		// Error reading the updated object. Retry.
+		log.Error(err, "Failed to get ChainlinkNode")
+		return ctrl.Result{}, err
+	}
 	return ctrl.Result{}, nil
 }
 
