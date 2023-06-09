@@ -18,14 +18,27 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	oraclev1alpha1 "github.com/JooKop/chainlink-kubernetes-operator/api/v1alpha1"
+)
+
+// Definitions to manage status conditions
+const (
+	// typeAvailableChainlinkNode represents the status of the Deployment reconciliation
+	typeAvailableChainlinkNode = "Available"
 )
 
 // ChainlinkNodeReconciler reconciles a ChainlinkNode object
@@ -34,6 +47,7 @@ type ChainlinkNodeReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+//+kubebuilder:rbac:groups=apps,resources=*,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=oracle.example.com,resources=chainlinknodes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=oracle.example.com,resources=chainlinknodes/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=oracle.example.com,resources=chainlinknodes/finalizers,verbs=update
@@ -65,6 +79,46 @@ func (r *ChainlinkNodeReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		log.Error(err, "Failed to get ChainlinkNode")
 		return ctrl.Result{}, err
 	}
+
+	// Create a new Chainlink Node deployment if one doesn't exist
+	found := &appsv1.Deployment{}
+	err = r.Get(ctx, types.NamespacedName{Name: chainlinkNode.Name, Namespace: chainlinkNode.Namespace}, found)
+	if err != nil && apierrors.IsNotFound(err) {
+		// Chainlink node deployment didn't exist, create a new deployment
+		dep, err := r.deploymentForChainlinkNode(chainlinkNode)
+		if err != nil {
+			log.Error(err, "Failed to define new Deployment resource for ChainlinkNode")
+
+			// update ChainlinkNode object status
+			meta.SetStatusCondition(&chainlinkNode.Status.Conditions, metav1.Condition{Type: typeAvailableChainlinkNode,
+				Status: metav1.ConditionFalse, Reason: "Reconciling",
+				Message: fmt.Sprintf("Failed to create Deployment for the custom resource (%s): (%s)", chainlinkNode.Name, err)})
+
+			if err := r.Status().Update(ctx, chainlinkNode); err != nil {
+				log.Error(err, "Failed to update ChainlinkNode status")
+				return ctrl.Result{}, err
+			}
+
+			return ctrl.Result{}, err
+		}
+
+		log.Info("Creating a new Deployment",
+			"Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+		if err = r.Create(ctx, dep); err != nil {
+			log.Error(err, "Failed to create new Deployment",
+				"Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+			return ctrl.Result{}, err
+		}
+
+		// Deployment created successfully
+		// Requeue reconciliatino to ensure status
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
+	} else if err != nil {
+		log.Error(err, "Failed to get Deployment")
+		// Return error and requeue to try again
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -73,4 +127,59 @@ func (r *ChainlinkNodeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&oraclev1alpha1.ChainlinkNode{}).
 		Complete(r)
+}
+
+// deploymentForChainlinkNode returns a Chainlink node Deployment object
+func (r *ChainlinkNodeReconciler) deploymentForChainlinkNode(
+	chainlinkNode *oraclev1alpha1.ChainlinkNode) (*appsv1.Deployment, error) {
+	ls := labelsForChainlinkNode(chainlinkNode.Name)
+
+	dep := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      chainlinkNode.Name,
+			Namespace: chainlinkNode.Namespace,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &[]int32{1}[0],
+			Selector: &metav1.LabelSelector{
+				MatchLabels: ls,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: ls,
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Image:   "smartcontract/chainlink:2.1.1",
+						Name:    "chainlink-node",
+						Command: []string{"chainlink"},
+						Args:    []string{"node", "-config", "/chainlink/config.toml", "-secrets", "/chainlink/secrets.toml", "start"},
+					}, {
+						Image: "postgres:latest",
+						Name:  "chainlink-postgres",
+						Env: []corev1.EnvVar{{
+							Name:  "POSTGRES_PASSWORD",
+							Value: "mysecretpassword",
+						}},
+					},
+					},
+				},
+			},
+		},
+	}
+
+	// Set the ownerRef for the Deployment
+	if err := ctrl.SetControllerReference(chainlinkNode, dep, r.Scheme); err != nil {
+		return nil, err
+	}
+	return dep, nil
+}
+
+// labelsForChainlinkNode returns the labels for selecting the resources
+func labelsForChainlinkNode(name string) map[string]string {
+	return map[string]string{"app.kubernetes.io/name": "Chainlink",
+		"app.kubernetes.io/instance":   name,
+		"app.kubernetes.io/part-of":    "chainlink-kubernetes-operator",
+		"app.kubernetes.io/created-by": "controller-manager",
+	}
 }
