@@ -2,8 +2,8 @@
 # The created image is then pushed into AWS ECR
 ECR_REGISTRY="310341869582.dkr.ecr.eu-central-1.amazonaws.com/chainlink-kubernetes-operator"
 REGION="eu-central-1"
-IMAGE_TAG_BASE="$ECR_REGISTRY/chainlink-kubernetes-controller"
+export IMAGE_TAG_BASE="$ECR_REGISTRY"
 
 aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-(cd operator && make docker-build docker-push)
+(cd operator && make docker-buildx docker-push)
