@@ -134,7 +134,7 @@ func (r *ChainlinkJobReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		log.Error(err, "Failed to marshal json body")
 	}
 	reader := bytes.NewReader(bodyBytes)
-	resp, err := client.Post("http://"+chainlinkJob.Spec.ChainlinkNode+"-service//sessions", "application/json", reader)
+	resp, err := client.Post("http://"+chainlinkJob.Spec.ChainlinkNode+"-service."+chainlinkJob.Namespace+"/sessions", "application/json", reader)
 	if err != nil {
 		log.Error(err, "An error")
 	}
@@ -178,7 +178,7 @@ func (r *ChainlinkJobReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		log.Error(err, "Failed to marshal json body")
 	}
 	reader = bytes.NewReader(bodyBytes)
-	resp, err = client.Post("http://"+chainlinkJob.Spec.ChainlinkNode+"-service/query", "application/json", reader)
+	resp, err = client.Post("http://"+chainlinkJob.Spec.ChainlinkNode+"-service."+chainlinkJob.Namespace+"/query", "application/json", reader)
 	if err != nil {
 		log.Error(err, "An error occurred")
 	}
