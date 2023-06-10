@@ -49,6 +49,7 @@ type ChainlinkNodeReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+//+kubebuilder:rbac:groups=v1,resources=*,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=apps,resources=*,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=oracle.example.com,resources=chainlinknodes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=oracle.example.com,resources=chainlinknodes/status,verbs=get;update;patch
