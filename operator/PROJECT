@@ -20,4 +20,13 @@ resources:
   kind: ChainlinkNode
   path: github.com/JooKop/chainlink-kubernetes-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: example.com
+  group: oracle
+  kind: ChainlinkJob
+  path: github.com/JooKop/chainlink-kubernetes-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"
