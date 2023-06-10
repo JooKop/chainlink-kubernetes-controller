@@ -20,6 +20,32 @@ rules:
 - apiGroups:
   - oracle.example.com
   resources:
+  - chainlinkjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - oracle.example.com
+  resources:
+  - chainlinkjobs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - oracle.example.com
+  resources:
+  - chainlinkjobs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - oracle.example.com
+  resources:
   - chainlinknodes
   verbs:
   - create
