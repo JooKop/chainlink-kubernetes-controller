@@ -23,11 +23,13 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -119,6 +121,45 @@ func (r *ChainlinkNodeReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 
+	// Create a new Chainlink Node Service if one doesn't exist
+	foundSvc := &v1.Service{}
+	err = r.Get(ctx, types.NamespacedName{Name: chainlinkNode.Name + "-service", Namespace: chainlinkNode.Namespace}, foundSvc)
+	if err != nil && apierrors.IsNotFound(err) {
+		// Chainlink node service didn't exist, create a new service
+		svc, err := r.serviceForChainlinkNode(chainlinkNode)
+		if err != nil {
+			log.Error(err, "Failed to define new Service resource for ChainlinkNode")
+
+			// update ChainlinkNode object status
+			meta.SetStatusCondition(&chainlinkNode.Status.Conditions, metav1.Condition{Type: typeAvailableChainlinkNode,
+				Status: metav1.ConditionFalse, Reason: "Reconciling",
+				Message: fmt.Sprintf("Failed to create Service for the custom resource deployment (%s): (%s)", chainlinkNode.Name, err)})
+
+			if err := r.Status().Update(ctx, chainlinkNode); err != nil {
+				log.Error(err, "Failed to update ChainlinkNode status")
+				return ctrl.Result{}, err
+			}
+
+			return ctrl.Result{}, err
+		}
+
+		log.Info("Creating a new Service",
+			"Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+		if err = r.Create(ctx, svc); err != nil {
+			log.Error(err, "Failed to create new Deployment",
+				"Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+			return ctrl.Result{}, err
+		}
+
+		// Service created successfully
+		// Requeue reconciliation to ensure status
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
+	} else if err != nil {
+		log.Error(err, "Failed to get Service")
+		// Return error and requeue to try again
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -127,6 +168,35 @@ func (r *ChainlinkNodeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&oraclev1alpha1.ChainlinkNode{}).
 		Complete(r)
+}
+
+// serviceForChainlinkNode returns a Chainlink node Service object
+func (r *ChainlinkNodeReconciler) serviceForChainlinkNode(
+	chainlinkNode *oraclev1alpha1.ChainlinkNode) (*v1.Service, error) {
+	ls := labelsForChainlinkNode(chainlinkNode.Name)
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      chainlinkNode.Name + "-service",
+			Namespace: chainlinkNode.Namespace,
+		},
+		Spec: v1.ServiceSpec{
+			Selector: ls,
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "operator-api",
+					Port:       80,
+					TargetPort: intstr.FromInt(6688),
+					Protocol:   "TCP",
+				},
+			},
+		},
+	}
+
+	// Set the ownerRef for the Deployment
+	if err := ctrl.SetControllerReference(chainlinkNode, svc, r.Scheme); err != nil {
+		return nil, err
+	}
+	return svc, nil
 }
 
 // deploymentForChainlinkNode returns a Chainlink node Deployment object
@@ -183,7 +253,7 @@ func (r *ChainlinkNodeReconciler) deploymentForChainlinkNode(
 						}},
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: 6688,
-							Name:          "operator-ui",
+							Name:          "operator-api",
 						}},
 					}, {
 						Image: "postgres:latest",
