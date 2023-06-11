@@ -66,11 +66,11 @@ type ChainlinkNodeReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *ChainlinkNodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
+	reQueue := false
 
 	//Fetch the changed ChainlinkNode resource
 	chainlinkNode := &oraclev1alpha1.ChainlinkNode{}
 	err := r.Get(ctx, req.NamespacedName, chainlinkNode)
-
 	if err != nil {
 		log.Error(err, "An error occurred")
 
@@ -114,8 +114,7 @@ func (r *ChainlinkNodeReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 
 		// Deployment created successfully
-		// Requeue reconciliatino to ensure status
-		return ctrl.Result{RequeueAfter: time.Minute}, nil
+		reQueue = true
 	} else if err != nil {
 		log.Error(err, "Failed to get Deployment")
 		// Return error and requeue to try again
@@ -153,12 +152,15 @@ func (r *ChainlinkNodeReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 
 		// Service created successfully
-		// Requeue reconciliation to ensure status
-		return ctrl.Result{RequeueAfter: time.Minute}, nil
+		reQueue = true
 	} else if err != nil {
 		log.Error(err, "Failed to get Service")
 		// Return error and requeue to try again
 		return ctrl.Result{}, err
+	}
+
+	if reQueue {
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
 	}
 
 	return ctrl.Result{}, nil
