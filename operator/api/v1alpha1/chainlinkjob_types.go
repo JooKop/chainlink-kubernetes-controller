@@ -28,8 +28,11 @@ type ChainlinkJobSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
+	// ChainlinkNode is the name of the Chainlink deployment you wish to link this job to.
 	ChainlinkNode string `json:"chainlinkNode,omitempty"`
-	JobSpec       string `json:"jobSpec,omitempty"`
+
+	// JobSpec stores the full Chainlink job specification configuration as a string.
+	JobSpec string `json:"jobSpec,omitempty"`
 }
 
 // ChainlinkJobStatus defines the observed state of ChainlinkJob
