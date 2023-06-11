@@ -36,8 +36,8 @@ spec:
             description: ChainlinkNodeSpec defines the desired state of ChainlinkNode
             properties:
               foo:
-                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                  Important: Run "make" to regenerate code after modifying this file'
+                description: Foo is an example field to demonstrate how we can configure
+                  our Chainlink deployments via custom resources.
                 type: string
             type: object
           status:
