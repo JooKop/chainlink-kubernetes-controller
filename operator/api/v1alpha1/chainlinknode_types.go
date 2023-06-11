@@ -27,6 +27,8 @@ import (
 type ChainlinkNodeSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Foo is an example field to demonstrate how we can configure our Chainlink deployments via custom resources.
 	Foo string `json:"foo,omitempty"`
 }
 
