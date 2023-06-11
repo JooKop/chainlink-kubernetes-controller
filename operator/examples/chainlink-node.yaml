@@ -1,6 +1,0 @@
-apiVersion: oracle.example.com/v1alpha1
-kind: ChainlinkNode
-metadata:
-  name: chainlink-node-example
-spec:
-  foo: Hello
