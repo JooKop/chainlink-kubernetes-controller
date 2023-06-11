@@ -2,9 +2,10 @@
 apiVersion: oracle.example.com/v1alpha1
 kind: ChainlinkJob
 metadata:
-  name: job-number-two
+  name: chainlink-job-2
+  namespace: chainlink-oracle-nodes
 spec:
-  chainlinkNode: chainlink-one
+  chainlinkNode: chainlink-node-1
   jobSpec: |
     # THIS IS EXAMPLE CODE THAT USES HARDCODED VALUES FOR CLARITY.
     # THIS IS EXAMPLE CODE THAT USES UN-AUDITED CODE.
