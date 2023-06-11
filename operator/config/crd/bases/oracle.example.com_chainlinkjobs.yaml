@@ -36,10 +36,12 @@ spec:
             description: ChainlinkJobSpec defines the desired state of ChainlinkJob
             properties:
               chainlinkNode:
-                description: Foo is an example field of ChainlinkJob. Edit chainlinkjob_types.go
-                  to remove/update
+                description: ChainlinkNode is the name of the Chainlink deployment
+                  you wish to link this job to.
                 type: string
               jobSpec:
+                description: JobSpec stores the full Chainlink job specification configuration
+                  as a string.
                 type: string
             type: object
           status:
