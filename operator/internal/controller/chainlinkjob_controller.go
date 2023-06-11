@@ -136,7 +136,8 @@ func (r *ChainlinkJobReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	reader := bytes.NewReader(bodyBytes)
 	resp, err := client.Post("http://"+chainlinkJob.Spec.ChainlinkNode+"-service."+chainlinkJob.Namespace+"/sessions", "application/json", reader)
 	if err != nil {
-		log.Error(err, "An error")
+		log.Error(err, "Failed to authenticate with the chainlink node, retring in 5 seconds")
+		return ctrl.Result{}, err
 	}
 	b, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
@@ -146,28 +147,7 @@ func (r *ChainlinkJobReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	c := &JobBody{
 		OperationName: "CreateJob",
-		Query: `mutation CreateJob($input: CreateJobInput!) {
-	createJob(input: $input) {
-	  ... on CreateJobSuccess {
-		job {
-		  id
-		  __typename
-		}
-		__typename
-	  }
-	  ... on InputErrors {
-		errors {
-		  path
-		  message
-		  code
-		  __typename
-		}
-		__typename
-	  }
-	  __typename
-	}
-  }
-  `,
+		Query:         createJobQuery,
 		Variables: VariableStruct{
 			Input: InputStruct{
 				Toml: chainlinkJob.Spec.JobSpec,
@@ -184,8 +164,7 @@ func (r *ChainlinkJobReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 	b, _ = ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
-	fmt.Println(string(b))
-
+	log.Info("Successfully created job '" + chainlinkJob.Name + "' to Chainlinkn node '" + chainlinkJob.Spec.ChainlinkNode + ".")
 	return ctrl.Result{}, nil
 }
 
