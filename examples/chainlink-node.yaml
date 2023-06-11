@@ -12,7 +12,7 @@ metadata:
   name: chainlink-node-1
   namespace: chainlink-oracle-nodes
 spec:
-  foo: "This is the first chainlink node!"
+  foo: "We can set any custom fields to configure our deployments"
 ---
 apiVersion: v1
 kind: ConfigMap
